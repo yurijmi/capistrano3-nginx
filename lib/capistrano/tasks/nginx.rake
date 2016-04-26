@@ -21,10 +21,10 @@ end
 
 namespace :nginx do
 
-  def valid_nginx_config?
-    nginx_service = fetch(:nginx_service_path)
-    test "[ $(#{nginx_service} configtest | grep -c 'fail') -eq 0 ]"
-  end
+  # def valid_nginx_config?
+  #   nginx_service = fetch(:nginx_service_path)
+  #   test "[ $(#{nginx_service} configtest | grep -c 'fail') -eq 0 ]"
+  # end
 
   task :load_vars do
     set :sites_available,       -> { fetch(:nginx_sites_available_dir) }
@@ -46,12 +46,12 @@ namespace :nginx do
     end
   end
 
-  desc "Configtest nginx service"
-  task :configtest do
-    on release_roles fetch(:nginx_roles) do
-      abort("nginx configuration is invalid! (Make sure nginx configuration files are readable and correctly formated.)") unless valid_nginx_config?
-    end
-  end
+  # desc "Configtest nginx service"
+  # task :configtest do
+  #   on release_roles fetch(:nginx_roles) do
+  #     abort("nginx configuration is invalid! (Make sure nginx configuration files are readable and correctly formated.)") unless valid_nginx_config?
+  #   end
+  # end
 
   %w[start stop restart reload].each do |command|
     desc "#{command.capitalize} nginx service"
@@ -61,7 +61,7 @@ namespace :nginx do
         sudo *arguments
       end
     end
-    before "nginx:#{command}", 'nginx:configtest' unless command == 'stop'
+    # before "nginx:#{command}", 'nginx:configtest' unless command == 'stop'
   end
 
   after 'deploy:check', nil do
