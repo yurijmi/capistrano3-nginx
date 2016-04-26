@@ -21,20 +21,6 @@ end
 
 namespace :nginx do
 
-  # prepend :sudo to list if arguments if :key is in :nginx_use_sudo_for list
-  def add_sudo_if_required argument_list, *keys
-    keys.each do | key |
-      if use_sudo? key
-        argument_list.unshift(:sudo)
-        break
-      end
-    end
-  end
-
-  def use_sudo? key
-    return (fetch(:nginx_sudo_tasks).include?(key) || fetch(:nginx_sudo_paths).include?(key))
-  end
-
   def valid_nginx_config?
     test_sudo = use_sudo?('nginx:configtest') ? 'sudo ' : ''
     nginx_service = fetch(:nginx_service_path)
@@ -73,8 +59,7 @@ namespace :nginx do
     task command => ['nginx:validate_user_settings'] do
       on release_roles fetch(:nginx_roles) do
         arguments = fetch(:nginx_service_path), command
-        add_sudo_if_required arguments, "nginx:#{command}"
-        execute *arguments
+        sudo *arguments
       end
     end
     before "nginx:#{command}", 'nginx:configtest' unless command == 'stop'
@@ -83,8 +68,7 @@ namespace :nginx do
   after 'deploy:check', nil do
     on release_roles fetch(:nginx_roles) do
       arguments = :mkdir, '-pv', fetch(:nginx_log_path)
-      add_sudo_if_required arguments, :nginx_log_path
-      execute *arguments
+      sudo *arguments
     end
   end
 
@@ -109,8 +93,7 @@ namespace :nginx do
           config = ERB.new(File.read(config_file)).result(binding)
           upload! StringIO.new(config), '/tmp/nginx.conf'
           arguments = :mv, '/tmp/nginx.conf', fetch(:nginx_application_name)
-          add_sudo_if_required arguments, 'nginx:sites:add', :nginx_sites_available_dir
-          execute *arguments
+          sudo *arguments
         end
       end
     end
@@ -121,8 +104,7 @@ namespace :nginx do
         if test "! [ -h #{fetch(:enabled_application)} ]"
           within fetch(:sites_enabled) do
             arguments = :ln, '-nfs', fetch(:available_application), fetch(:enabled_application)
-            add_sudo_if_required arguments, 'nginx:sites:enable', :nginx_sites_enabled_dir
-            execute *arguments
+            sudo *arguments
           end
         end
       end
@@ -134,8 +116,7 @@ namespace :nginx do
         if test "[ -f #{fetch(:enabled_application)} ]"
           within fetch(:sites_enabled) do
             arguments = :rm, '-f', fetch(:nginx_application_name)
-            add_sudo_if_required arguments, 'nginx:sites:disable', :nginx_sites_enabled_dir
-            execute *arguments
+            sudo *arguments
           end
         end
       end
@@ -147,8 +128,7 @@ namespace :nginx do
         if test "[ -f #{fetch(:available_application)} ]"
           within fetch(:sites_available) do
             arguments = :rm, fetch(:nginx_application_name)
-            add_sudo_if_required arguments, 'nginx:sites:remove', :nginx_sites_available_dir
-            execute *arguments
+            sudo *arguments
           end
         end
       end
